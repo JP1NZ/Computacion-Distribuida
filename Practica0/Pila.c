@@ -34,8 +34,12 @@ int pop (){
         return -1;
     }else{
         struct Nodo *tope = pila.tope;
-        pila.tope = pila.tope->siguiente;
-        return tope->elemento;
+        int elemento = tope->elemento;
+
+        pila.tope = tope->siguiente;
+        free(tope);
+
+        return elemento;
     }
 
 }
@@ -49,7 +53,7 @@ int emptyPila(void){
 
 /**
  * Regresa el elemento en el tope de la pila.
- * Si la pila es vacía regresa NULL si no regresa el elemento.
+ * Si la pila es vacía regresa -1 si no regresa el elemento.
  */
 int top (void){
     return (emptyPila())? -1: pila.tope->elemento;

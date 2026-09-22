@@ -6,8 +6,8 @@
 */
 
 struct Cola{
-    int elemento;
     struct Nodo *primero;
+    struct Nodo *ultimo;
 }cola;
 
 /**
@@ -15,6 +15,7 @@ struct Cola{
  */
 void inicializarCola(void){
     cola.primero = NULL;
+    cola.ultimo = NULL;
 }
 
 /**
@@ -22,12 +23,14 @@ void inicializarCola(void){
  */
 void enqueue(int elemento){
     struct Nodo *nuevo = crear_nodo(elemento);
+
     if (cola.primero == NULL){
         cola.primero = nuevo;
+        cola.ultimo = nuevo;
     }else{
-        cola.primero->siguiente =nuevo;
+        cola.ultimo->siguiente = nuevo;
+        cola.ultimo = nuevo;
     }
-   
 }
 
 /**
@@ -35,12 +38,21 @@ void enqueue(int elemento){
  */
 int dequeue(){
     if (cola.primero == NULL){
-        return NULL;
-    }else{
-        struct Nodo *primero = cola.primero;
-        cola.primero = cola.primero->siguiente;
-        return primero->elemento;
+        return -1;
     }
+
+    struct Nodo *primero = cola.primero;
+    int elemento = primero->elemento;
+
+    cola.primero = primero->siguiente;
+
+    if (cola.primero == NULL){
+        cola.ultimo = NULL;
+    }
+
+    free(primero);
+
+    return elemento;
 }
 
 /**
