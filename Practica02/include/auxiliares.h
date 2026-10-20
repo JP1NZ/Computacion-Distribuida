@@ -5,9 +5,13 @@
 #include <stddef.h>
 
 typedef struct {
-    int **segmentos;
-    size_t *longitudes;
-    size_t cantidad;
+    int **segmentos; //Arreglo que almacena los segmentos del arreglo original, que recibe de cada nodo.
+                        // Por ejemplo longitudes[1] = {1,2,4,1,6} nos dice que el nodo 1 recibe un segmento  {1,2,4,1,6} del arreglo original.
+
+    size_t *longitudes; //Arreglo que almacena las longitudes de los segmentos que recibe de cada nodo.
+                        // Por ejemplo longitudes[1] = 5 nos dice que el nodo 1 recibe un segmento de tamano 5 del arreglo original.
+
+    size_t cantidad; //Cantidad de segmentos (numero de nodos).
 } Cuadricula;
 
 bool cuadricula_crear(const int *arreglo,
