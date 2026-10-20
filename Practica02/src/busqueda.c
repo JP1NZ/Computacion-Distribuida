@@ -6,13 +6,13 @@
 #include <stdlib.h>
 
 typedef struct {
-    bool coordinador;
-    bool iniciado;
-    bool finalizo;
-    bool encontrado;
-    size_t esperados;
-    size_t recibidos;
-    bool *respondio;
+    bool coordinador; // Nos dice si el nodo es el nodo coordinador.
+    bool iniciado; // Nos dice si la busqueda ya ha comenzado.
+    bool finalizo; // Nos dice si la busqueda ya ha terminado.
+    bool encontrado; // Nos dice si la busqueda logró encontrar al elemento.
+    size_t esperados; //Cantidad de elementos esperados.
+    size_t recibidos; // Cantidad de elementos recibidos después de realizar la busqueda.
+    bool *respondio; // Almacena la información de si los nodo trabajadores responieron o no a la solicitud de busqueda.
 } EstadoBusqueda;
 
 static void destruir_estado_busqueda(void *estado_generico) {
@@ -34,7 +34,8 @@ static size_t indice_trabajador(const Nodo *nodo, int id) {
 }
 
 /**
-    Funcion que realiza la busqueda de un elemento en el arreglo recibido por el nodo.
+    Funcion que realiza la busqueda de un elemento en el arreglo recibido por el nodo. Para la busqueda se 
+    emplea busqueda binaria.
     nodo : que realiza la bsuqueda.
     mensaje : recibido que contiene el elemento a buscar asi como el arreglo en donde buscar.
     simulador : que utilizameros para enviar la respuesta.
@@ -69,7 +70,7 @@ static void procesar_trabajo_busqueda(
     // 4. Liberar la memoria del mensaje local.
     mensaje_destruir(&respuesta);
 
-    (void)enviado;
+    (void)enviado; //Con esto no da avertencias el compilador :)
 }
 
 
@@ -145,7 +146,7 @@ bool nodo_busqueda_iniciar(Nodo *nodo,
                            size_t longitud,
                            int elemento) {
 
-       // 1. Validar los argumentos.
+    // 1. Validar los argumentos. Simplemente para saber si continuar o no.
     if (nodo == NULL ||
         simulador == NULL ||
         nodo->estado == NULL ||
@@ -153,19 +154,21 @@ bool nodo_busqueda_iniciar(Nodo *nodo,
         return false;
     }
 
+    // Creamo el estado de la busqueda. El nodo proporciona el estado inicialmente.
     EstadoBusqueda *estado = nodo->estado;
 
-    // 2. Si es un trabajador, no tiene que iniciar nada.
+    // 2. De acuerdo con el estado proporcionado con el nodo, verificamos si el nodo es el nodo coordinador
+    // Si no lo es no hacemos nada y regresamos true. 
     if (!estado->coordinador) {
         return true;
     }
 
-    // Necesitamos al menos un trabajador.
+    // Necesitamos al menos un trabajador. Si no hay trabajadores no se puede iniciar la distribución.
     if (nodo->cantidad_vecinos == 0) {
         return false;
     }
 
-    // 2. Creamos la cuadricula.
+    // 3. Creamos la cuadricula par dividir el arreglo.
     Cuadricula cuadricula = {0};
 
     if (!cuadricula_crear(arreglo,
@@ -175,16 +178,18 @@ bool nodo_busqueda_iniciar(Nodo *nodo,
         return false;
     }
 
-    // 3. Inicializar el estado de la búsqueda.
+    // 4. Con la división el arreglo y las comprobaciones básicas hechas (es coordinador y tiene vecinos) 
+    // podemos continuar actualizando el Estado de la busqueda.
     estado->encontrado = false;
     estado->recibidos = 0;
     estado->finalizo = false;
 
+    // Inicialmente ningún nodo ha respondido a la solicitud e busqueda.
     for (size_t i = 0; i < estado->esperados; ++i) {
         estado->respondio[i] = false;
     }
 
-    // 4. Enviar un segmento a cada trabajador.
+    // 5. Enviar el mensaje con su segmento, a cada trabajador.
     for (size_t i = 0; i < nodo->cantidad_vecinos; ++i) {
 
         Mensaje mensaje = {0};
@@ -195,9 +200,10 @@ bool nodo_busqueda_iniciar(Nodo *nodo,
                            nodo->id,
                            nodo->id,
                            elemento,
-                           cuadricula.segmentos[i],
-                           cuadricula.longitudes[i])) {
-
+                           cuadricula.segmentos[i], //Segmento
+                           cuadricula.longitudes[i])) { // Longitu del segmento.
+            
+            //En caso de que el mensaje no se pueda construir.
             cuadricula_destruir(&cuadricula);
             return false;
         }
@@ -211,18 +217,21 @@ bool nodo_busqueda_iniciar(Nodo *nodo,
                                         &mensaje,
                                         1);
 
-        // Liberar el mensaje local.
+        // Liberar el espacio del mensaje local.
         mensaje_destruir(&mensaje);
+        
 
+        //Si no se pudo enviar el mensaje, liberamos la memoria y regresamos false.
         if (!enviado) {
             cuadricula_destruir(&cuadricula);
             return false;
         }
     }
 
-    // 5. Liberar la cuadrícula.
+    // Ya se han enviado todos los mensajes. Liberamos memoria
     cuadricula_destruir(&cuadricula);
 
+    //Actualizamos el estado de la busqueda a "iniciado".
     estado->iniciado = true;
 
     return true;

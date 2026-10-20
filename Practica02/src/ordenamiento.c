@@ -7,16 +7,16 @@
 #include <string.h>
 
 typedef struct {
-    bool coordinador;
-    bool iniciado;
-    bool finalizo;
-    size_t esperados;
-    size_t recibidos;
-    bool *respondio;
-    int **segmentos;
-    size_t *longitudes;
-    int *resultado;
-    size_t longitud_resultado;
+    bool coordinador; // El nodo es el nodo coordinador?
+    bool iniciado; // El ordenamiento ya ha iniciado?
+    bool finalizo; // El ordenamiento ya ha finalizado?
+    size_t esperados; // Cantidad de elementos esperados.
+    size_t recibidos; // Cantidad de elementos recibidos.
+    bool *respondio; // Almacena la información de que nodos respondieron a la solicitud de ordenamiento.
+    int **segmentos; // Almacena los segmentos enviados por cada nodo trabajaor.
+    size_t *longitudes; // Longitudes de los segmentos enviados por cada nodo trabajador.
+    int *resultado; // Arreglo resultante de juntar y ordenar los segmentos ordenados enviados por cada nodo trabajador.
+    size_t longitud_resultado; // Longitud del arreglo resultante.
 } EstadoOrdenamiento;
 
 static void destruir_estado_ordenamiento(void *estado_generico) {
@@ -169,11 +169,20 @@ Nodo *nodo_ordenamiento_crear(int id,
     return nodo;
 }
 
+
+/*
+    Función que inicia la distribución el ordenamiento desde un nodo.
+    Parecida a su homólogo de busqueda.
+    nodo: dese el que se inicia el ordenamiento
+    arreglo: que se quiere orenar.
+    longitud: del arreglo que se quiere ordenar.
+*/
 bool nodo_ordenamiento_iniciar(Nodo *nodo,
                                Simulador *simulador,
                                const int *arreglo,
                                size_t longitud) {
-    // 1. Validar los argumentos.
+
+    // 1. Validar los argumentos. Para saber si existen errores básicos.
     if (nodo == NULL ||
         simulador == NULL ||
         nodo->estado == NULL ||
@@ -181,30 +190,29 @@ bool nodo_ordenamiento_iniciar(Nodo *nodo,
         return false;
     }
 
+    //Creamos el estado del ordenamiento con el estado proporcionado por el nodo.
     EstadoOrdenamiento *estado = nodo->estado;
 
-    // 2. Si es un trabajador, no tiene que iniciar nada.
+    // 2. Si el nodo es un trabajador, no tiene que iniciar nada.
     if (!estado->coordinador) {
         return true;
     }
     
-    // Necesitamos al menos un trabajador.
+    // Verificamos que tengamos al menos un trabajador para poder iniciar la busqueda.
     if (nodo->cantidad_vecinos == 0) {
         return false;
     }
 
-    // 2. Dividir el arreglo en tantos segmentos como trabajadores.
+    // 3. Dividimos  el arreglo en tantos segmentos como trabajadores.
     Cuadricula cuadricula = {0};
 
     if (!cuadricula_crear(arreglo,
                           longitud,
                           nodo->cantidad_vecinos,
                           &cuadricula)) {
-        return false;
+        return false; //ERROR.
     }
 
-    // La operación ya ha comenzado.
-    estado->iniciado = true;
 
     // 3. Enviar un segmento a cada trabajador.
     for (size_t i = 0; i < cuadricula.cantidad; ++i) {
@@ -233,17 +241,22 @@ bool nodo_ordenamiento_iniciar(Nodo *nodo,
                                         &mensaje,
                                         TICK_ORDENAMIENTO);
 
-        // El simulador guarda su propia copia del mensaje.
+        // Liberamos el espacio del mensaje.
         mensaje_destruir(&mensaje);
+        
 
+        //Vemos si el mensaje pudo ser enviado.
         if (!enviado) {
             cuadricula_destruir(&cuadricula);
             return false;
         }
     }
 
-    // 4. Liberar la cuadrícula temporal.
+    // Liberar la cuadrícula temporal.
     cuadricula_destruir(&cuadricula);
+
+    // El ordenamiento ya ha comenzado 
+    estado->iniciado = true;
 
     return true;
 }
