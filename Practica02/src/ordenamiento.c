@@ -173,23 +173,81 @@ bool nodo_ordenamiento_iniciar(Nodo *nodo,
                                Simulador *simulador,
                                const int *arreglo,
                                size_t longitud) {
-    (void)nodo;
-    (void)simulador;
-    (void)arreglo;
-    (void)longitud;
+    // 1. Validar los argumentos.
+    if (nodo == NULL ||
+        simulador == NULL ||
+        nodo->estado == NULL ||
+        (longitud > 0 && arreglo == NULL)) {
+        return false;
+    }
 
-    /*
-     * TODO para el coordinador:
-     * 1. Dividir el arreglo con cuadricula_crear.
-     * 2. Crear un mensaje MSG_ORDENAR_TRABAJO.
-     * 3. Enviar un segmento a cada trabajador.
-     * 4. Liberar la cuadricula temporal.
-     *
-     * Los trabajadores no hacen nada al iniciar.
-     */
+    EstadoOrdenamiento *estado = nodo->estado;
+
+    // 2. Si es un trabajador, no tiene que iniciar nada.
+    if (!estado->coordinador) {
+        return true;
+    }
+    
+    // Necesitamos al menos un trabajador.
+    if (nodo->cantidad_vecinos == 0) {
+        return false;
+    }
+
+    // 2. Dividir el arreglo en tantos segmentos como trabajadores.
+    Cuadricula cuadricula = {0};
+
+    if (!cuadricula_crear(arreglo,
+                          longitud,
+                          nodo->cantidad_vecinos,
+                          &cuadricula)) {
+        return false;
+    }
+
+    // La operación ya ha comenzado.
+    estado->iniciado = true;
+
+    // 3. Enviar un segmento a cada trabajador.
+    for (size_t i = 0; i < cuadricula.cantidad; ++i) {
+
+        Mensaje mensaje = {0};
+
+        // Crear el mensaje con el segmento correspondiente.
+        if (!mensaje_crear(&mensaje,
+                           MSG_ORDENAR_TRABAJO,
+                           nodo->id,
+                           nodo->id,
+                           0,
+                           cuadricula.segmentos[i],
+                           cuadricula.longitudes[i])) {
+
+            cuadricula_destruir(&cuadricula);
+            return false;
+        }
+
+        // Obtener el identificador del trabajador.
+        int id_trabajador = nodo->vecinos[i];
+
+        // Enviar el trabajo al trabajador correspondiente.
+        bool enviado = simulador_enviar(simulador,
+                                        id_trabajador,
+                                        &mensaje,
+                                        TICK_ORDENAMIENTO);
+
+        // El simulador guarda su propia copia del mensaje.
+        mensaje_destruir(&mensaje);
+
+        if (!enviado) {
+            cuadricula_destruir(&cuadricula);
+            return false;
+        }
+    }
+
+    // 4. Liberar la cuadrícula temporal.
+    cuadricula_destruir(&cuadricula);
 
     return true;
 }
+
 
 bool nodo_ordenamiento_finalizo(const Nodo *nodo) {
     if (nodo == NULL || nodo->estado == NULL) {

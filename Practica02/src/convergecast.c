@@ -64,18 +64,73 @@ static void recibir_convergecast(Nodo *nodo,
     (void)mensaje;
     (void)simulador;
 
-    /*
-     * TODO:
-     * 1. Comprobar que sea MSG_CONVERGECAST.
-     * 2. Verificar que el emisor sea un hijo.
-     * 3. Evitar procesar dos veces la misma respuesta.
-     * 4. Combinar el valor recibido con el acumulado.
-     * 5. Contar la respuesta.
-     * 6. Si respondieron todos los hijos:
-     *      - si es raíz, guardar el resultado;
-     *      - en otro caso, enviar el acumulado al padre.
-     */
+    
+    // 1. Validar los argumentos.
+    if (nodo == NULL ||
+        mensaje == NULL ||
+        simulador == NULL ||
+        nodo->estado == NULL) {
+        return;
+    }
+
+    EstadoConvergecast *estado = nodo->estado;
+
+    // 2. Comprobar el tipo de mensaje.
+    if (mensaje->tipo != MSG_CONVERGECAST) {
+        return;
+    }
+
+    // Un nodo finalizado no debe procesar más respuestas.
+    if (estado->finalizo || estado->enviado) {
+        return;
+    }
+
+    // 3. Identificar al hijo que envió la respuesta.
+    size_t indice = indice_hijo(nodo, mensaje->origen);
+
+    // Si el emisor no es uno de nuestros hijos, ignorar.
+    if (indice == nodo->cantidad_vecinos) {
+        return;
+    }
+
+    // 4. Evitar procesar dos veces la respuesta del mismo hijo.
+    if (estado->hijo_respondio[indice]) {
+        return;
+    }
+
+    estado->hijo_respondio[indice] = true;
+
+    // 5. Combinar el valor recibido con el acumulado local.
+    estado->acumulado = estado->combinar(
+        estado->acumulado,
+        mensaje->valor
+    );
+
+    // 6. Registrar que recibimos una respuesta.
+    ++estado->respuestas;
+
+    // Todavía faltan hijos por responder.
+    if (estado->respuestas < nodo->cantidad_vecinos) {
+        return;
+    }
+
+    // 7. Todos los hijos han respondido.
+    bool es_raiz = estado->padre == nodo->id;
+
+    if (es_raiz) {
+        // La raíz ya tiene el resultado final.
+        estado->finalizo = true;
+    } else {
+        // Enviar el acumulado al padre.
+        if (!enviar_acumulado(nodo, estado, simulador)) {
+            simulador->error_memoria = true;
+            return;
+        }
+
+        estado->finalizo = true;
+    }
 }
+
 
 Nodo *nodo_convergecast_crear(int id,
                               int padre,
@@ -120,13 +175,42 @@ bool nodo_convergecast_iniciar(Nodo *nodo, Simulador *simulador) {
      (void)nodo;
     (void)simulador;
 
-    /*
-     * TODO:
-     * 1. Comprobar si el nodo es una hoja.
-     * 2. Si es raíz y hoja, finalizar.
-     * 3. Si es una hoja normal, enviar su valor al padre.
-     */
+    // 1. Validar los argumentos.
+    if (nodo == NULL ||
+        simulador == NULL ||
+        nodo->estado == NULL) {
+        return false;
+    }
 
+    EstadoConvergecast *estado = nodo->estado;
+
+    // Evitar iniciar dos veces el mismo nodo.
+    if (estado->enviado || estado->finalizo) {
+        return false;
+    }
+
+    // 2. Comprobar si el nodo es una hoja.
+    bool es_hoja = nodo->cantidad_vecinos == 0;
+
+    // 3. Comprobar si el nodo es la raíz.
+    bool es_raiz = estado->padre == nodo->id;
+
+    // 4. Si es raíz y hoja, el algoritmo termina.
+    if (es_raiz && es_hoja) {
+        estado->finalizo = true;
+        return true;
+    }
+
+    // 5. Si es una hoja normal, enviar el acumulado al padre.
+    if (es_hoja) {
+        if (!enviar_acumulado(nodo, estado, simulador)) {
+            return false;
+        }
+
+        estado->finalizo = true;
+    }
+
+    // 6. Si tiene hijos, esperará sus respuestas.
     return true;
 }
 

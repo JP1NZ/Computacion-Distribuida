@@ -5,8 +5,8 @@
 
 /*
     Recibe un apuntador a un arreglo de varios elementos (sobre el que haremos una busqueda u ordenaremos más tarde).
-    longitud del arreglo dado.
-    cantidad_segmentos corresponde a la cantidad de segmentos en los que se divide el arreglo, osea, el número de nodos trabajadores.
+    longitud: del arreglo dado.
+    cantidad_segmentos: corresponde a la cantidad de segmentos en los que se divide el arreglo, osea, el número de nodos trabajadores.
     Se recibe una cuadrícula que se modificará a lo largo de la ejecución de la función. 
 */
 bool cuadricula_crear(const int *arreglo,
@@ -192,7 +192,7 @@ bool k_way_merge(const Cuadricula *cuadricula,
     //El arreglo resultante es la salida.
     *resultado = salida;
     *longitud_resultado = total;
-    
+
     return true; //Logramos completar el merge :)
 }
 
@@ -260,13 +260,12 @@ Algoritmo de busqueda lineal.
 Regresa true si el elemento se encuentra en el arreglo dado, false en otro caso. 
 */
 bool busqueda_lineal(const int *arreglo, size_t longitud, int elemento) {
-    for (size_t i; i < longitud; i++){
+    for (size_t i = 0; i < longitud; i++){
         if (elemento == arreglo[i]){
-            return true
+            return true;
         }
     }
     return false;
-
 }
 
 

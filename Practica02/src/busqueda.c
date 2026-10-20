@@ -32,19 +32,46 @@ static size_t indice_trabajador(const Nodo *nodo, int id) {
     }
     return nodo->cantidad_vecinos;
 }
+
+/**
+    Funcion que realiza la busqueda de un elemento en el arreglo recibido por el nodo.
+    nodo : que realiza la bsuqueda.
+    mensaje : recibido que contiene el elemento a buscar asi como el arreglo en donde buscar.
+    simulador : que utilizameros para enviar la respuesta.
+*/
 static void procesar_trabajo_busqueda(
     Nodo *nodo,
     const Mensaje *mensaje,
     Simulador *simulador) {
 
-    /*
-     * TODO:
-     * 1. Buscar mensaje->valor en mensaje->datos.
-     * 2. Crear MSG_BUSCAR_RESULTADO.
-     * 3. Guardar verdadero o falso en respuesta.valor.
-     * 4. Enviar la respuesta al coordinador.
-     */
+    // 1. Buscar el elemento en el segmento recibido.
+    bool encontrado = busqueda_binaria(mensaje->datos,mensaje-> longitud, mensaje-> valor);
+
+    // 2. Crear el mensaje de respuesta.
+    Mensaje respuesta = {0};
+
+    if (!mensaje_crear(&respuesta,
+                       MSG_BUSCAR_RESULTADO,
+                       nodo->id,
+                       mensaje->origen,
+                       encontrado ? 1 : 0, //Valor
+                       NULL,
+                       0)) {
+        return;
+    }
+
+    // 3. Enviar la respuesta al coordinador.
+    bool enviado = simulador_enviar(simulador,
+                                    respuesta.referente,
+                                    &respuesta,
+                                    1);
+
+    // 4. Liberar la memoria del mensaje local.
+    mensaje_destruir(&respuesta);
+
+    (void)enviado;
 }
+
 
 static void procesar_resultado_busqueda(Nodo *nodo,
                                         const Mensaje *mensaje) {
@@ -102,27 +129,106 @@ Nodo *nodo_busqueda_crear(int id,
     return nodo;
 }
 
+
+/*
+    Inicia la distribución de la busqueda desde un nodo.
+    nodo: es el nodo coordinador.
+    Se nos proporciona un simulador.
+    arreglo: es el arreglo en el que se quiere buscar.
+    longitud: es la longitud del arreglo en el que se quiere buscar.
+    elmento: a buscar en el arreglo
+    Regresa true si se pudó iniciar la distribución.
+*/
 bool nodo_busqueda_iniciar(Nodo *nodo,
                            Simulador *simulador,
                            const int *arreglo,
                            size_t longitud,
                            int elemento) {
-    (void)nodo;
-    (void)simulador;
-    (void)arreglo;
-    (void)longitud;
-    (void)elemento;
 
-    /*
-     * TODO para el coordinador:
-     * 1. Dividir el arreglo con cuadricula_crear.
-     * 2. Crear MSG_BUSCAR_TRABAJO.
-     * 3. Colocar el elemento buscado en mensaje.valor.
-     * 4. Enviar un segmento a cada trabajador.
-     */
+       // 1. Validar los argumentos.
+    if (nodo == NULL ||
+        simulador == NULL ||
+        nodo->estado == NULL ||
+        (longitud > 0 && arreglo == NULL)) {
+        return false;
+    }
+
+    EstadoBusqueda *estado = nodo->estado;
+
+    // 2. Si es un trabajador, no tiene que iniciar nada.
+    if (!estado->coordinador) {
+        return true;
+    }
+
+    // Necesitamos al menos un trabajador.
+    if (nodo->cantidad_vecinos == 0) {
+        return false;
+    }
+
+    // 2. Creamos la cuadricula.
+    Cuadricula cuadricula = {0};
+
+    if (!cuadricula_crear(arreglo,
+                          longitud,
+                          nodo->cantidad_vecinos,
+                          &cuadricula)) {
+        return false;
+    }
+
+    // 3. Inicializar el estado de la búsqueda.
+    estado->encontrado = false;
+    estado->recibidos = 0;
+    estado->finalizo = false;
+
+    for (size_t i = 0; i < estado->esperados; ++i) {
+        estado->respondio[i] = false;
+    }
+
+    // 4. Enviar un segmento a cada trabajador.
+    for (size_t i = 0; i < nodo->cantidad_vecinos; ++i) {
+
+        Mensaje mensaje = {0};
+
+        // Crear el mensaje con el segmento correspondiente.
+        if (!mensaje_crear(&mensaje,
+                           MSG_BUSCAR_TRABAJO,
+                           nodo->id,
+                           nodo->id,
+                           elemento,
+                           cuadricula.segmentos[i],
+                           cuadricula.longitudes[i])) {
+
+            cuadricula_destruir(&cuadricula);
+            return false;
+        }
+
+        // Obtener el identificador del trabajador.
+        int id_trabajador = nodo->vecinos[i];
+
+        // Enviar el mensaje.
+        bool enviado = simulador_enviar(simulador,
+                                        id_trabajador,
+                                        &mensaje,
+                                        1);
+
+        // Liberar el mensaje local.
+        mensaje_destruir(&mensaje);
+
+        if (!enviado) {
+            cuadricula_destruir(&cuadricula);
+            return false;
+        }
+    }
+
+    // 5. Liberar la cuadrícula.
+    cuadricula_destruir(&cuadricula);
+
+    estado->iniciado = true;
 
     return true;
 }
+    
+
 
 bool nodo_busqueda_finalizo(const Nodo *nodo) {
     if (nodo == NULL || nodo->estado == NULL) {

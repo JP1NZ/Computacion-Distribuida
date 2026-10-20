@@ -26,6 +26,9 @@ bool k_way_merge(const Cuadricula *cuadricula,
 
 void ordenar_insercion(int *arreglo, size_t longitud);
 bool busqueda_lineal(const int *arreglo, size_t longitud, int elemento);
+size_t busca_minimo (int *arreglo, size_t a, size_t b);
+void intercambiar (int *arreglo, size_t r, size_t k);
+bool busqueda_binaria(const int *arreglo, size_t longitud, int elemento);
 int combinar_suma(int acumulado, int valor);
 
 #endif
