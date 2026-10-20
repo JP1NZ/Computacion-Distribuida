@@ -60,10 +60,6 @@ static size_t indice_hijo(const Nodo *nodo, int id_hijo) {
 static void recibir_convergecast(Nodo *nodo,
                                  const Mensaje *mensaje,
                                  Simulador *simulador) {
-(void)nodo;
-    (void)mensaje;
-    (void)simulador;
-
     
     // 1. Validar los argumentos.
     if (nodo == NULL ||
@@ -171,9 +167,11 @@ Nodo *nodo_convergecast_crear(int id,
     return nodo;
 }
 
+
+/*
+
+*/
 bool nodo_convergecast_iniciar(Nodo *nodo, Simulador *simulador) {
-     (void)nodo;
-    (void)simulador;
 
     // 1. Validar los argumentos.
     if (nodo == NULL ||
