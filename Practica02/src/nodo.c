@@ -9,8 +9,11 @@ Nodo *nodo_crear(int id,
                  ManejadorMensaje al_recibir,
                  void *estado,
                  DestructorEstado destruir_estado) {
+    //Reservamos memoria dinamica para almacenar la direccion de un objeto Nodo.
     Nodo *nodo = calloc(1, sizeof(*nodo));
-    if (nodo == NULL) {
+
+    //Por si fallamos al tratar de reservar memoria. 
+    if (nodo == NULL) {  
         return NULL;
     }
 

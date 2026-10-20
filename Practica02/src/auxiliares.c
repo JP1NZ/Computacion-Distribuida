@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+Recibe un arre
+*/
 bool cuadricula_crear(const int *arreglo,
                       size_t longitud,
                       size_t cantidad_segmentos,
@@ -98,28 +101,127 @@ bool k_way_merge(const Cuadricula *cuadricula,
     return true;
 }
 
+
+/*
+Selection sort. 
+Algoritmo sencillo de ordenamiento.
+Recibe una puntero a un arreglo de enteros y la longitud de dicho arreglo.
+*/
 void ordenar_insercion(int *arreglo, size_t longitud) {
-    (void)arreglo;
-    (void)longitud;
+    //Ya esta ordenado trivialmente.
+    if (longitud < 2) {
+    return;
+    }
 
-    /*
-     * TODO:
-     * Implementar un algoritmo simple de ordenamiento.
-     */
+    //Se ordena en otro caso. Hasta longitud - 1 porque para el último elemento del arreglo ya no es necesario intercambiar.
+    for (size_t i = 0; i < longitud -1; i++ ){
+        intercambiar(arreglo, i, busca_minimo(arreglo,i,longitud - 1));
+    }
 }
 
+
+/*
+Funcion auxiliar que busca al elemento mas pequeno de una determinada zona de un arreglo de enteros. 
+a es el indice mas pequeno. Limite inferior.
+b es el indice mas grande. Limite superior.
+*/
+size_t busca_minimo (int *arreglo, size_t a, size_t b){
+    //Se verifica que a sea el limite inferior.
+    if (a > b){
+        exit(EXIT_FAILURE);
+    }
+
+    int minimo = arreglo[a];
+    size_t posicion = a;
+    for (size_t i = a + 1; i <= b ;i++){
+        if (minimo > arreglo[i]){
+            minimo = arreglo[i];
+            posicion = i;
+        }
+    }
+    return posicion;
+}
+
+
+/*
+Función auxiliar que intercambia los elementos en las posiciones r y k de un arreglo de enteros.
+*/
+void intercambiar (int *arreglo, size_t r, size_t k){
+    //No se verifica la validez de los índices pues se manda a llamar a esta función desde un for
+    // que asegura su validez.
+
+
+    //Copiamos el elemento en la posición r.
+    int copia = arreglo[r];
+
+    //Hacemos el intercambio.
+    arreglo[r] = arreglo[k];
+    arreglo[k] = copia;
+}
+
+
+/*
+Algoritmo de busqueda lineal.
+Regresa true si el elemento se encuentra en el arreglo dado, false en otro caso. 
+*/
 bool busqueda_lineal(const int *arreglo, size_t longitud, int elemento) {
-    (void)arreglo;
-    (void)longitud;
-    (void)elemento;
-
-    /*
-     * TODO:
-     * Buscar el elemento recorriendo el arreglo.
-     */
-
+    for (size_t i; i < longitud; i++){
+        if (elemento == arreglo[i]){
+            return true
+        }
+    }
     return false;
+
 }
+
+
+/*
+Algoritmo de busqueda binaria.
+Regresa true si el elemento se encuentra en el arreglo dado, false en otro caso. 
+Esta versión de busqueda binaria es algo insulsa (de momento) puesto que tiene que hacer una copia
+del arreglo recibido y ordenarlo. 
+*/
+bool busqueda_binaria(const int *arreglo, size_t longitud, int elemento) {
+    //Longitud del arreglo es 0? JA TRIVIAL.
+    if(longitud == 0){
+       return false;
+    }
+    
+    // Reservamos memoria para una copia del arreglo.
+    int *copia = malloc(longitud * sizeof(int));
+
+    if (copia == NULL) {
+        return false; // No se pudo reservar memoria.
+    }
+
+    // Copiamos los elementos del arreglo original.
+    memcpy(copia, arreglo, longitud * sizeof(int));
+    
+    // Ordenamos el arreglo copia;
+    ordenar_insercion(copia, longitud);
+
+    // Procedemos con el algoritmo de busqueda binaria en la copia.
+    size_t max, mitad, min;
+    min = 0;
+    max = longitud -1;
+    mitad = (max + min) /2;
+
+    while (max - min > 1) {
+        if (elemento < copia[mitad]){
+            max = mitad;
+            mitad = (max + min) /2;
+        }else{
+            min = mitad;
+            mitad = (max + min) /2; 
+        }
+    }
+
+    bool encontrado = copia[min] == elemento || copia[max] == elemento;
+    free(copia);
+    return encontrado;
+}
+
+
 
 int combinar_suma(int acumulado, int valor) {
     return acumulado + valor;
