@@ -272,7 +272,7 @@ bool busqueda_lineal(const int *arreglo, size_t longitud, int elemento) {
 /*
 Algoritmo de busqueda binaria.
 Regresa true si el elemento se encuentra en el arreglo dado, false en otro caso. 
-Esta versión de busqueda binaria es algo insulsa (de momento) puesto que tiene que hacer una copia
+Esta versión de busqueda binaria es algo insulsa puesto que tiene que hacer una copia
 del arreglo recibido y ordenarlo. 
 */
 bool busqueda_binaria(const int *arreglo, size_t longitud, int elemento) {
