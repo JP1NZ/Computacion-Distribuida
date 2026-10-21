@@ -5,10 +5,10 @@
 #include <stdlib.h>
 
 typedef struct {
-    int padre;
+    int padre; //Padre del nodo
     int acumulado;
-    size_t respuestas;
-    bool *hijo_respondio;
+    size_t respuestas; // Numero de respuestas recibidas.
+    bool *hijo_respondio; //Arreglo que nos dice si los hijos respondieron.
     bool enviado;
     bool finalizo;
     FuncionCombinar combinar;
@@ -57,6 +57,13 @@ static size_t indice_hijo(const Nodo *nodo, int id_hijo) {
     return nodo->cantidad_vecinos;
 }
 
+
+/*
+    Función que describe que hace un nodo cuando recibe un mensaje de Convergecast.
+    nodo: que recibe el mensaje.
+    mensaje : recibido por el nodo.
+    simulador : para continuar con la propagación al padre.
+*/
 static void recibir_convergecast(Nodo *nodo,
                                  const Mensaje *mensaje,
                                  Simulador *simulador) {
@@ -69,6 +76,7 @@ static void recibir_convergecast(Nodo *nodo,
         return;
     }
 
+    //Creamos el estado utilizando el estado del nodo.
     EstadoConvergecast *estado = nodo->estado;
 
     // 2. Comprobar el tipo de mensaje.
@@ -89,32 +97,34 @@ static void recibir_convergecast(Nodo *nodo,
         return;
     }
 
-    // 4. Evitar procesar dos veces la respuesta del mismo hijo.
+    //Evitar procesar dos veces la respuesta del mismo hijo.
     if (estado->hijo_respondio[indice]) {
         return;
     }
 
     estado->hijo_respondio[indice] = true;
 
-    // 5. Combinar el valor recibido con el acumulado local.
+    // 4. Combinar el valor recibido con el acumulado local.
     estado->acumulado = estado->combinar(
         estado->acumulado,
         mensaje->valor
     );
 
-    // 6. Registrar que recibimos una respuesta.
+    //Registrar que recibimos una respuesta.
     ++estado->respuestas;
 
-    // Todavía faltan hijos por responder.
+    // Todavía faltan hijos por responder, terminamos de momento en espera de otra respuesta.
+    // Note que respuuestas < cantidad_vecinos ya que no estamos contando al nodo padre.
     if (estado->respuestas < nodo->cantidad_vecinos) {
         return;
     }
 
-    // 7. Todos los hijos han respondido.
+    // 5.Si llegamos a esta linea entonces todos los nodos hijos han respondido.
+    // Verificamos si el nodo es la raíz.
     bool es_raiz = estado->padre == nodo->id;
 
     if (es_raiz) {
-        // La raíz ya tiene el resultado final.
+        // La raíz ya tiene el resultado final. No hacemos nada más que establecer el estado del convergecast en finalizado.
         estado->finalizo = true;
     } else {
         // Enviar el acumulado al padre.
@@ -169,7 +179,12 @@ Nodo *nodo_convergecast_crear(int id,
 
 
 /*
-
+    Función que inicia el algoritmo convercast desde un nodo. Regresa true si se logra iniciar la propagación.
+    En caso de que el nodo sea una hoja, se propaga el mensaje a su padre y eventualmente hasta la raíz del árbol.
+    Si el nodo no es una hoja se regresa true aunque no hagamos nada.
+    En el caso particular de que el nodo sea tanto la raíz como una hoja, simplemente regresamos true (árbol de 1 elemento).
+    nodo: desde el que se quiere iniciar la propagación de convergecast.
+    simulador: se lo damos a enviar_acumulado para que construya y trate de enviar el mensaje.
 */
 bool nodo_convergecast_iniciar(Nodo *nodo, Simulador *simulador) {
 
@@ -180,6 +195,7 @@ bool nodo_convergecast_iniciar(Nodo *nodo, Simulador *simulador) {
         return false;
     }
 
+    //Creamos el estado del convergecast utilizando el estado del nodo.
     EstadoConvergecast *estado = nodo->estado;
 
     // Evitar iniciar dos veces el mismo nodo.
@@ -187,28 +203,26 @@ bool nodo_convergecast_iniciar(Nodo *nodo, Simulador *simulador) {
         return false;
     }
 
-    // 2. Comprobar si el nodo es una hoja.
+    // 2. Comprobar si el nodo es una hoja o es la raíz.
     bool es_hoja = nodo->cantidad_vecinos == 0;
-
-    // 3. Comprobar si el nodo es la raíz.
     bool es_raiz = estado->padre == nodo->id;
 
-    // 4. Si es raíz y hoja, el algoritmo termina.
+    // Si es raíz y hoja, el algoritmo termina.
     if (es_raiz && es_hoja) {
         estado->finalizo = true;
         return true;
     }
 
-    // 5. Si es una hoja normal, enviar el acumulado al padre.
+    // Si es una hoja normal, enviar el acumulado al padre.
     if (es_hoja) {
         if (!enviar_acumulado(nodo, estado, simulador)) {
-            return false;
+            return false; //Error si no se puede enviar.
         }
 
         estado->finalizo = true;
     }
 
-    // 6. Si tiene hijos, esperará sus respuestas.
+    // Si tiene hijos, solamente esperará sus respuestas.
     return true;
 }
 
