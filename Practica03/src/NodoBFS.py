@@ -5,7 +5,7 @@ from Canales.CanalRecorridos import *
 # La unidad de tiempo
 TICK = 1
 
-
+'''Clase que implementa la interfaz nodo '''
 class NodoBFS(Nodo):
     ''' Implementa la interfaz de Nodo para el algoritmo de Broadcast.'''
 

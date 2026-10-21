@@ -1,6 +1,8 @@
 import simpy
 from Canales.Canal import Canal
-
+'''
+ Implementa la clase canal
+'''
 class CanalRecorridos(Canal):
     '''
     Clase que modela un canal, permite enviar mensajes one-to-many.
