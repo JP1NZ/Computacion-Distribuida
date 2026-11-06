@@ -1,7 +1,7 @@
 import simpy
 from Canales.Canal import Canal
 '''
- Implementa la clase canal
+ Implementa la clase Canal
 '''
 class CanalRecorridos(Canal):
     '''

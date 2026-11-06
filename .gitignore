@@ -1,0 +1,58 @@
+# ==============================
+# Entornos virtuales de Python
+# ==============================
+venv/
+.venv/
+env/
+
+# ==============================
+# Archivos de Python
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==============================
+# Archivos temporales
+# ==============================
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# ==============================
+# Distribución y compilación
+# ==============================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ==============================
+# Pruebas y cobertura
+# ==============================
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+
+# ==============================
+# Jupyter Notebook
+# ==============================
+.ipynb_checkpoints/
+
+# ==============================
+# Editores e IDE
+# ==============================
+.vscode/
+.idea/
+
+# ==============================
+# Sistema operativo
+# ==============================
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]

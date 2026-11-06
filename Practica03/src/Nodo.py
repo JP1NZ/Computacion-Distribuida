@@ -1,12 +1,12 @@
 import simpy
 
 """
-Interfaz nodo.
+Clase nodo.
 """
 class Nodo:
 
     """
-    Método para 1inicializar los atr1ibutos de la clase nodo. 
+    Método para 1inicializar los atributos de la clase nodo. 
     """
 
     def __init__(self, id_nodo: int, vecinos: list, canal_entrada: simpy.Store,
